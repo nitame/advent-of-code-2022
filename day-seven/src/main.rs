@@ -8,7 +8,7 @@ fn main() {
     println!("Advent of code day 7");
 
     let file_path = get_file_path(String::from("input.txt"));
-    let result = puzzle(file_path);
+    let result = puzzle_2(file_path);
 
     println!("result -> {result}");
 }
@@ -29,6 +29,21 @@ fn get_file_path(filename: String) -> PathBuf {
 fn puzzle(file_path: PathBuf) -> u32 {
     let registry = build_regitry(file_path);
     registry.into_values().filter(|x| *x < 100_000).sum()
+}
+
+fn puzzle_2(file_path: PathBuf) -> u32 {
+    let registry = build_regitry(file_path);
+    let total_used_space = registry
+        .get(vec!["/".to_string()].as_slice())
+        .expect("No root directory found");
+    let space_to_reclaim = 30_000_000_u32 - (70_000_000_u32 - total_used_space);
+    let mut candidate_to_reclaim_space: Vec<u32> = registry
+        .into_values()
+        .filter(|x| *x > space_to_reclaim)
+        .collect();
+    candidate_to_reclaim_space.sort();
+    let first = candidate_to_reclaim_space.first().expect("");
+    *first
 }
 
 fn build_regitry(file_path: PathBuf) -> HashMap<Vec<String>, u32> {
@@ -76,7 +91,7 @@ fn update_registry(
 
 #[cfg(test)]
 mod tests {
-    use crate::{get_file_path, puzzle};
+    use crate::{get_file_path, puzzle, puzzle_2};
 
     #[test]
     fn it_works_with_input_test() {
@@ -92,5 +107,21 @@ mod tests {
 
         let result = puzzle(file_path);
         assert_eq!(result, 1443806);
+    }
+
+    #[test]
+    fn puzzle_2_with_input_test() {
+        let file_path = get_file_path(String::from("input.test.txt"));
+
+        let result = puzzle_2(file_path);
+        assert_eq!(result, 24933642)
+    }
+
+    #[test]
+    fn puzzle_2_with_input() {
+        let file_path = get_file_path(String::from("input.txt"));
+
+        let result = puzzle_2(file_path);
+        assert_eq!(result, 942298)
     }
 }
