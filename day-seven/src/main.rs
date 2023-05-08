@@ -28,15 +28,11 @@ fn get_file_path(filename: String) -> PathBuf {
 
 fn puzzle(file_path: PathBuf) -> u32 {
     let registry = build_regitry(file_path);
-    let registry_grouped_by_directories = sum_size_by_parent_directories(&registry);
-    registry_grouped_by_directories
-        .into_values()
-        .filter(|x| *x < 100_000)
-        .sum()
+    registry.into_values().filter(|x| *x < 100_000).sum()
 }
 
-fn build_regitry(file_path: PathBuf) -> HashMap<String, u32> {
-    let mut registry: HashMap<String, u32> = HashMap::new();
+fn build_regitry(file_path: PathBuf) -> HashMap<Vec<String>, u32> {
+    let mut registry: HashMap<Vec<String>, u32> = HashMap::new();
     if let Ok(lines) = read_lines(file_path) {
         let mut current_path = Vec::new();
         for line in lines {
@@ -48,17 +44,13 @@ fn build_regitry(file_path: PathBuf) -> HashMap<String, u32> {
                     }
                     ["$", "cd", name] => {
                         current_path.push(name.to_string());
-                        registry.insert(current_path.join(""), 0);
+                        registry.insert(current_path.clone(), 0);
                     }
                     ["$", "ls"] => (),
                     ["dir", _] => (),
                     [size, _] => {
-                        let path_string = current_path.join("");
                         let file_size = size.parse::<u32>().expect("Cannot parse size file");
-                        registry
-                            .entry(path_string)
-                            .and_modify(|v| *v += file_size)
-                            .or_insert(file_size);
+                        update_registry(&mut registry, &current_path, file_size);
                     }
                     _ => (),
                 }
@@ -68,18 +60,18 @@ fn build_regitry(file_path: PathBuf) -> HashMap<String, u32> {
     registry
 }
 
-fn sum_size_by_parent_directories(registry: &HashMap<String, u32>) -> HashMap<String, u32> {
-    let mut summed_registry: HashMap<String, u32> = HashMap::new();
-    for i in registry {
-        let mut sum = 0;
-        for j in registry {
-            if j.0.starts_with(i.0) {
-                sum += j.1
-            }
-        }
-        summed_registry.insert(i.0.clone(), sum);
+fn update_registry(
+    registry: &mut HashMap<Vec<String>, u32>,
+    current_path: &Vec<String>,
+    size: u32,
+) {
+    registry
+        .entry(current_path.clone())
+        .and_modify(|v| *v += size)
+        .or_insert(size);
+    if let Some((_, head)) = current_path.split_last() {
+        update_registry(registry, &head.to_vec(), size);
     }
-    summed_registry
 }
 
 #[cfg(test)]
